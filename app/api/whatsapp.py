@@ -111,7 +111,7 @@ async def process_webhook(msg: dict, db: Session):
                         state.state = ConversationStateEnum.awaiting_exit_method
                         db.commit()
 
-                        send_whatsapp_message(phone_number, (
+                        send_whatsapp_message(phone, (
                             "❌ No buses available currently.\n\n"
                             "How will you exit?\n"
                             "1. With a friend or relative\n"
