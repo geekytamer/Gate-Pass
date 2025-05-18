@@ -131,11 +131,14 @@ async def process_webhook(msg: dict, db: Session):
             case ConversationStateEnum.awaiting_bus:
                 buses = db.query(Bus).filter_by(accommodation_id=user.accommodation_id).all()
                 selected = None
+                print(text)
                 if text.isdigit():
+                    print("is digit")
                     index = int(text) - 1
                     if 0 <= index < len(buses):
                         selected = buses[index]
                 else:
+                    print("is not digit")
                     for bus in buses:
                         if bus.name.lower() == text:
                             selected = bus
