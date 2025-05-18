@@ -105,7 +105,7 @@ async def process_webhook(msg: dict, db: Session):
                     return
 
                 if exit_method == "bus":
-                    buses = db.query(Bus).filter_by(accommodation_id=user.accommodation_id).all()
+                    buses = db.query(Bus).filter_by(university_id=user.university_id).all()
                     if not buses:
                         # Re-initiate the conversation
                         state.state = ConversationStateEnum.awaiting_exit_method
