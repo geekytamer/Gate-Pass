@@ -1,0 +1,14 @@
+fastapi
+uvicorn
+sqlalchemy
+psycopg2-binary
+python-jose
+passlib[bcrypt]
+python-dotenv
+httpx
+pydantic[email]
+jwt
+requests
+pydantic_settings
+qrcode
+Pillow

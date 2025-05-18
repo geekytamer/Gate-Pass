@@ -1,0 +1,70 @@
+# === GLOBAL ===
+.DS_Store
+Thumbs.db
+*.log
+
+# === PYTHON ===
+*.pyc
+*.pyo
+__pycache__/
+*.sqlite3
+instance/
+*.db
+
+# Virtual environments
+.venv/
+env/
+venv/
+ENV/
+
+# IDEs
+.vscode/
+.idea/
+
+# pytest
+.cache/
+.pytest_cache/
+
+# MyPy & Coverage
+.mypy_cache/
+.coverage
+htmlcov/
+
+# === FASTAPI / BACKEND ===
+backend/__pycache__/
+backend/*.pyc
+backend/.env
+backend/.mypy_cache/
+backend/.pytest_cache/
+backend/.coverage
+
+# Local media / QR codes / temp files
+backend/static/qrs/
+backend/static/tmp/
+
+# === NODE / FRONTEND ===
+frontend/node_modules/
+frontend/build/
+frontend/dist/
+frontend/.env
+frontend/.eslintcache
+
+# Lockfiles (optional if you only use one)
+yarn.lock
+pnpm-lock.yaml
+
+# === LOGS ===
+*.log
+*.out
+logs/
+*.pid
+
+# === SYSTEM FILES ===
+*.swp
+*.bak
+*.tmp
+*.orig
+
+# === OS Specific ===
+ehthumbs.db
+Icon?
