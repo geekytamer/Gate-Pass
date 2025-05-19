@@ -179,3 +179,37 @@ async def send_whatsapp_template_with_qr_link(phone_number: str, qr_url: str, st
         )
         response.raise_for_status()
         return response.json()
+    
+async def send_check_notification(phone: str, student_name: str, check_type: str):
+    template_name = "student_checked_out" if check_type == "out" else "student_checked_in"
+
+    payload = {
+        "messaging_product": "whatsapp",
+        "to": phone,
+        "type": "template",
+        "template": {
+            "name": template_name,
+            "language": {"code": "en_US"},
+            "components": [
+                {
+                    "type": "body",
+                    "parameters": [
+                        {"type": "text", "text": student_name}
+                    ]
+                }
+            ]
+        }
+    }
+
+    headers = {
+        "Authorization": f"Bearer {settings.WHATSAPP_TOKEN}",
+        "Content-Type": "application/json"
+    }
+
+    async with httpx.AsyncClient() as client:
+        res = await client.post(
+            f"{settings.WHATSAPP_API_URL}/{settings.WHATSAPP_PHONE_NUMBER_ID}/messages",
+            headers=headers,
+            json=payload
+        )
+        res.raise_for_status()

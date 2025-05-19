@@ -1,8 +1,8 @@
 import { useEffect, useState, useRef } from "react";
-import type { MutableRefObject } from "react";
 import { Html5QrcodeScanner } from "html5-qrcode";
 import { useAuth } from "../../context/AuthContext";
 import axios from "axios";
+import toast, { Toaster } from "react-hot-toast";
 
 interface ExitRequest {
   exit_method: string;
@@ -11,6 +11,7 @@ interface ExitRequest {
   approved_at?: string;
 }
 interface Student {
+  id: string;
   name: string;
   phone_number: string;
   accommodation: string;
@@ -30,11 +31,11 @@ export default function QRScanner() {
 
   useEffect(() => {
     if (!scannerRef.current) {
-      const scanner = new Html5QrcodeScanner("qr-reader", {
-        fps: 10,
-        qrbox: 250,
-      }, false);
-
+      const scanner = new Html5QrcodeScanner(
+        "qr-reader",
+        { fps: 10, qrbox: 250 },
+        false
+      );
       scanner.render(
         (decodedText) => {
           if (decodedText !== scannedId) {
@@ -67,7 +68,7 @@ export default function QRScanner() {
           setLatestRequest(requestRes.data);
         } catch (err: any) {
           if (err.response?.status === 404) {
-            setLatestRequest(null); // No request found is OK
+            setLatestRequest(null);
           } else {
             console.error(err);
             setError("❌ Unable to fetch latest request.");
@@ -89,8 +90,39 @@ export default function QRScanner() {
     fetchDetails();
   }, [scannedId]);
 
+  const handleCheckIn = async () => {
+    if (!student) return;
+    try {
+      await axios.post(`${API}/students/${student.id}/check-in`, null, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      toast.success("✅ Student checked in");
+      setShowModal(false);
+      setScannedId("");
+      setStudent(null);
+    } catch (err) {
+      toast.error("❌ Check-in failed");
+    }
+  };
+
+  const handleCheckOut = async () => {
+    if (!student) return;
+    try {
+      await axios.post(`${API}/students/${student.id}/check-out`, null, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      toast.success("✅ Student checked out");
+      setShowModal(false);
+      setScannedId("");
+      setStudent(null);
+    } catch (err) {
+      toast.error("❌ Check-out failed");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-100 p-6">
+      <Toaster />
       <h2 className="text-xl font-bold text-center mb-4">Scan Student QR</h2>
       <div id="qr-reader" className="mx-auto max-w-md" />
 
@@ -133,16 +165,30 @@ export default function QRScanner() {
               </div>
             )}
 
-            <button
-              onClick={() => {
-                setShowModal(false);
-                setScannedId("");
-                setStudent(null);
-              }}
-              className="mt-6 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-            >
-              Close
-            </button>
+            <div className="flex justify-end space-x-3 mt-6">
+              <button
+                onClick={handleCheckIn}
+                className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+              >
+                ✅ Check In
+              </button>
+              <button
+                onClick={handleCheckOut}
+                className="bg-yellow-600 text-white px-4 py-2 rounded hover:bg-yellow-700"
+              >
+                🚪 Check Out
+              </button>
+              <button
+                onClick={() => {
+                  setShowModal(false);
+                  setScannedId("");
+                  setStudent(null);
+                }}
+                className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700"
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}

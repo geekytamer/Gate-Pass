@@ -10,10 +10,13 @@ import QRScanner from "./pages/staff/QRScanner";
 import StudentsPage from "./pages/university_admin/Students";
 import BusesPage from "./pages/university_admin/Buses";
 import StudentDetailsPage from "./pages/university_admin/StudentDetailsPage";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 function App() {
   return (
     <AuthProvider>
+      <ToastContainer position="top-right" autoClose={3000} />
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<LoginPage />} />
