@@ -9,7 +9,7 @@ from app.schemas.accomodation import AccommodationOut
 
 router = APIRouter()
 
-@router.get("/", response_model=List[AccommodationOut])
+@router.get("/")
 def list_accommodations(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
