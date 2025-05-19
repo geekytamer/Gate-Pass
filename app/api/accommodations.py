@@ -12,6 +12,7 @@ def list_accommodations(
     authorization: str = Header(...) # no ": User"
 ):
     current_user = get_current_user(authorization, db)
+    print(f"Current user: {current_user.name} ({current_user.role})")
     return [
         {"id": str(a.id), "name": a.name}
         for a in db.query(Accommodation)
