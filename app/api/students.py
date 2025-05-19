@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Header, Query
 from pydantic import BaseModel
@@ -12,7 +13,7 @@ from app.core.security import get_current_user, get_password_hash
 from app.schemas.exit_request import ExitRequestOut
 from app.schemas.student import ActivityEntry, ParentInfo, RegisterWithParentInput, StudentCreate, StudentDetailsResponse
 from app.services.qr import generate_qr_image
-from app.services.whatsapp import send_whatsapp_template_with_qr_link, upload_qr_to_whatsapp, send_whatsapp_template_with_qr
+from app.services.whatsapp import send_check_notification, send_whatsapp_template_with_qr_link, upload_qr_to_whatsapp, send_whatsapp_template_with_qr
 
 router = APIRouter()
 
@@ -327,4 +328,56 @@ def update_student(
         db.commit()
         return {"message": "✅ Student updated successfully"}
 
+@router.post("/{student_id}/check-out")
+async def check_out_student(student_id: UUID, db: Session = Depends(get_db)):
+    student = db.query(User).filter(User.id == student_id, User.role == "student").first()
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
 
+    request = (
+        db.query(ExitRequest)
+        .filter(ExitRequest.student_id == student_id, ExitRequest.status == "approved")
+        .order_by(ExitRequest.requested_at.desc())
+        .first()
+    )
+    if not request:
+        raise HTTPException(status_code=404, detail="No approved exit request")
+
+    request.status = "completed"
+    db.commit()
+
+    parent_link = db.query(ParentStudentLink).filter(ParentStudentLink.student_id == student.id).first()
+    if parent_link:
+        parent = db.query(User).filter(User.id == parent_link.parent_id).first()
+        if parent:
+            await send_check_notification(parent.phone_number, student.name, "out")
+
+    return {"message": "Student checked out and parent notified"}
+
+
+@router.post("/{student_id}/check-in")
+async def check_in_student(student_id: UUID, db: Session = Depends(get_db)):
+    student = db.query(User).filter(User.id == student_id, User.role == "student").first()
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+
+    request = (
+        db.query(ExitRequest)
+        .filter(ExitRequest.student_id == student_id, ExitRequest.status == "completed")
+        .order_by(ExitRequest.requested_at.desc())
+        .first()
+    )
+    if not request:
+        raise HTTPException(status_code=404, detail="No completed exit request to check in")
+
+    request.status = "returned"
+    request.approved_at = datetime.utcnow()
+    db.commit()
+
+    parent_link = db.query(ParentStudentLink).filter(ParentStudentLink.student_id == student.id).first()
+    if parent_link:
+        parent = db.query(User).filter(User.id == parent_link.parent_id).first()
+        if parent:
+            await send_check_notification(parent.phone_number, student.name, "in")
+
+    return {"message": "Student checked in and parent notified"}
