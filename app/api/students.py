@@ -55,7 +55,7 @@ async def register_student_with_parent(
         raise HTTPException(status_code=403, detail="Unauthorized")
 
     # Check for duplicate phone numbers
-    if db.query(User).filter(User.phone_number.in_([data.student_phone, data.parent.phone_number])).first():
+    if db.query(User).filter(User.phone_number.in_([data.student_phone,])).first():
         raise HTTPException(status_code=400, detail="Phone number already used")
 
     student_id = uuid4()
