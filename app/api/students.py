@@ -9,7 +9,7 @@ from app.models.exit_request import ExitRequest
 from app.models.user import ParentStudentLink, User
 from app.core.security import get_current_user, get_password_hash
 from app.schemas.exit_request import ExitRequestOut
-from app.schemas.student import ActivityEntry, ParentInfo, RegisterWithParentInput, StudentCreate, StudentDetailsResponse, StudetWithParentCreate
+from app.schemas.student import ActivityEntry, ParentInfo, RegisterWithParentInput, StudentCreate, StudentDetailsResponse
 from app.services.qr import generate_qr_image
 from app.services.whatsapp import send_whatsapp_template_with_qr_link, upload_qr_to_whatsapp, send_whatsapp_template_with_qr
 
