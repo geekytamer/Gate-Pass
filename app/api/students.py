@@ -1,5 +1,6 @@
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Header, Query
+from pydantic import BaseModel
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 from uuid import UUID, uuid4
@@ -247,5 +248,83 @@ def get_student_details(student_id: UUID, db: Session = Depends(get_db)):
             ) for req in activity
         ]
     )
+    
+@router.delete("/{id}")
+def delete_student(id: UUID, db: Session = Depends(get_db)):
+    student = db.query(User).filter(User.id == id, User.role == "student").first()
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+
+    db.delete(student)
+    db.commit()
+    return {"message": "Student deleted"}
+
+class UpdateStudentInput(BaseModel):
+    name: str
+    phone_number: str
+    accommodation_id: UUID | None = None
+    parent_name: str
+    parent_phone: str
+
+
+@router.put("/{student_id}")
+def update_student(
+    student_id: UUID,
+    payload: UpdateStudentInput,
+    authorization: str = Header(...)
+):
+    current_user = get_current_user(authorization)
+
+    if current_user.role != "university_admin":  # type: ignore
+        raise HTTPException(status_code=403, detail="Access denied")    
+    
+    # 2. DB session
+    with get_db() as db:
+
+        student = db.query(User).filter(User.id == student_id, User.role == "student").first()
+        if not student:
+            raise HTTPException(status_code=404, detail="Student not found")
+
+        # Update student basic info
+        student.name = payload.name
+        student.phone_number = payload.phone_number
+        student.accommodation_id = payload.accommodation_id
+
+        # Handle parent
+        existing_parent = db.query(User).filter(
+            User.phone_number == payload.parent_phone,
+            User.role == "parent"
+        ).first()
+
+        if existing_parent:
+            student.parent_id = existing_parent.id
+        else:
+            # Update or create parent
+            if student.parent_id:
+                parent = db.query(User).filter(User.id == student.parent_id).first()
+                if parent:
+                    parent.name = payload.parent_name
+                    parent.phone_number = payload.parent_phone
+                else:
+                    new_parent = User(
+                        name=payload.parent_name,
+                        phone_number=payload.parent_phone,
+                        role="parent"
+                    )
+                    db.add(new_parent)
+                    db.flush()
+                    student.parent_id = new_parent.id
+            else:
+                new_parent = User(
+                    name=payload.parent_name,
+                    phone_number=payload.parent_phone,
+                    role="parent"
+                )
+                db.add(new_parent)
+                db.flush()
+                student.parent_id = new_parent.id
+
+        db.commit()
+        return {"message": "✅ Student updated successfully"}
 
 
