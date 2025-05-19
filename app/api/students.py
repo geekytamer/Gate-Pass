@@ -60,17 +60,19 @@ async def register_student_with_parent(
 
     student_id = uuid4()
 
-    # Create parent
-    parent = User(
-        id=uuid4(),
-        name=data.parent.name,
-        phone_number=data.parent.phone_number,
-        role="parent",
-        hashed_password=get_password_hash("1234")
-    )
-    db.add(parent)
-    db.commit()
-    db.refresh(parent)
+    parent = db.query(User).filter(User.phone_number == data.parent.phone_number).first()
+    if not parent:
+        # Create parent
+        parent = User(
+            id=uuid4(),
+            name=data.parent.name,
+            phone_number=data.parent.phone_number,
+            role="parent",
+            hashed_password=get_password_hash("1234")
+        )
+        db.add(parent)
+        db.commit()
+        db.refresh(parent)
 
     # Create student
     student = User(
