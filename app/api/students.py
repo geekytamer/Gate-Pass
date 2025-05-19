@@ -1,4 +1,3 @@
-from datetime import datetime
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Header, Query
 from sqlalchemy import func, or_
@@ -9,90 +8,73 @@ from app.models.accommodation import Accommodation
 from app.models.exit_request import ExitRequest
 from app.models.user import ParentStudentLink, User
 from app.core.security import get_current_user, get_password_hash
-from app.schemas.common import SuccessResponse
 from app.schemas.exit_request import ExitRequestOut
-from app.schemas.student import ActivityEntry, ParentInfo, RegisterWithParentInput, StudentCreate, StudentDetailsResponse, StudentUpdate, StudentWithParentCreate
+from app.schemas.student import ActivityEntry, ParentInfo, StudentCreate, StudentDetailsResponse
 from app.services.qr import generate_qr_image
-from app.services.whatsapp import send_check_notification, send_whatsapp_template_with_qr_link, upload_qr_to_whatsapp, send_whatsapp_template_with_qr
+from app.services.whatsapp import send_whatsapp_template_with_qr_link, upload_qr_to_whatsapp, send_whatsapp_template_with_qr
 
 router = APIRouter()
 
-@router.post("/register")
-async def register_student(data: StudentCreate, db: Session = Depends(get_db)):
-    # Check if the student already exists
-    existing = db.query(User).filter(User.phone_number == data.phone_number).first()
-    if existing:
-        raise HTTPException(status_code=400, detail="Student already exists")
+@router.post("/register-with-parent")
+async def register_student_with_parent(
+    data: StudentWithParentCreate,
+    db: Session = Depends(get_db),
+    authorization: str = Header(...)
+):
+    user = get_current_user(authorization, db)
+    if user.role != "university_admin":  # type: ignore
+        raise HTTPException(status_code=403, detail="Unauthorized")
 
-    # Create student user
+    # Check for duplicate phone numbers
+    if db.query(User).filter(User.phone_number.in_([data.student_phone, data.parent.phone_number])).first():
+        raise HTTPException(status_code=400, detail="Phone number already used")
+
     student_id = uuid4()
-    hashed_password = get_password_hash(data.password)
 
-    student = User(
-        id=student_id,
-        name=data.name,
-        phone_number=data.phone_number,
-        hashed_password=hashed_password,
-        role="student",
-        accommodation_id=data.accommodation_id,
+    # Create parent
+    parent = User(
+        id=uuid4(),
+        name=data.parent.name,
+        phone_number=data.parent.phone_number,
+        role="parent",
+        hashed_password=get_password_hash("1234")
     )
-    db.add(student)
+    db.add(parent)
     db.commit()
-
-    # Generate QR code PNG and upload to WhatsApp
-    qr_path = generate_qr_code(str(student_id))
-    media_id = await upload_qr_to_whatsapp(qr_path)
-    await send_whatsapp_template_with_qr(data.phone_number, media_id, data.name)
-
-    return {"id": str(student_id), "message": "Student registered and QR sent via WhatsApp."}
-
-@router.post("/students/register-with-parent", response_model=SuccessResponse)
-def register_student_with_parent(payload: RegisterWithParentInput, db: Session = Depends(get_db)):
-    student_phone = payload.student_phone.lstrip("+")
-    parent_phone = payload.parent.phone_number.lstrip("+")
-
-    # Check if student already exists
-    if db.query(User).filter(User.phone_number == student_phone).first():
-        raise HTTPException(status_code=400, detail="Student already exists")
-
-    # Check if parent exists
-    parent = db.query(User).filter(User.phone_number == parent_phone, User.role == "parent").first()
-    if not parent:
-        parent = User(
-            id=uuid4(),
-            name=payload.parent.name,
-            phone_number=parent_phone,
-            role="parent"
-        )
-        db.add(parent)
-        db.flush()  # flush to get parent.id
-
-    # Get accommodation (optional)
-    accommodation = None
-    if payload.accommodation_id:
-        accommodation = db.query(Accommodation).filter(Accommodation.id == payload.accommodation_id).first()
-        if not accommodation:
-            raise HTTPException(status_code=404, detail="Accommodation not found")
+    db.refresh(parent)
 
     # Create student
     student = User(
-        id=uuid4(),
-        name=payload.student_name,
-        phone_number=student_phone,
+        id=student_id,
+        name=data.student_name,
+        phone_number=data.student_phone,
         role="student",
-        accommodation_id=accommodation.id if accommodation else None,
-        university_id=parent.university_id
+        hashed_password=get_password_hash("1234"),
+        accommodation_id=None,
+        university_id=user.university_id
     )
     db.add(student)
-    db.flush()
+    db.commit()
+    db.refresh(student)
 
+    # Link them
     link = ParentStudentLink(
         id=uuid4(),
-        parent_id=parent.id,
-        student_id=student.id
+        student_id=student.id,
+        parent_id=parent.id
     )
     db.add(link)
     db.commit()
+
+    # ✅ Generate QR and get public URL
+    qr_url = generate_qr_image(str(student.id))
+
+    # ✅ Send QR message using public URL
+    print(await send_whatsapp_template_with_qr_link(
+        phone_number=data.student_phone,
+        qr_url=qr_url,
+        student_name=student.name
+    ))
 
     return {"message": "Student and parent registered successfully"}
 
@@ -256,110 +238,5 @@ def get_student_details(student_id: UUID, db: Session = Depends(get_db)):
             ) for req in activity
         ]
     )
-    
-@router.post("/{student_id}/check-out")
-async def check_out_student(student_id: UUID, db: Session = Depends(get_db)):
-    student = db.query(User).filter(User.id == student_id, User.role == "student").first()
-    if not student:
-        raise HTTPException(status_code=404, detail="Student not found")
-
-    request = (
-        db.query(ExitRequest)
-        .filter(ExitRequest.student_id == student_id, ExitRequest.status == "approved")
-        .order_by(ExitRequest.requested_at.desc())
-        .first()
-    )
-    if not request:
-        raise HTTPException(status_code=404, detail="No approved exit request")
-
-    request.status = "completed"
-    db.commit()
-
-    parent_link = db.query(ParentStudentLink).filter(ParentStudentLink.student_id == student.id).first()
-    if parent_link:
-        parent = db.query(User).filter(User.id == parent_link.parent_id).first()
-        if parent:
-            await send_check_notification(parent.phone_number, student.name, "out")
-
-    return {"message": "Student checked out and parent notified"}
-
-
-@router.post("/{student_id}/check-in")
-async def check_in_student(student_id: UUID, db: Session = Depends(get_db)):
-    student = db.query(User).filter(User.id == student_id, User.role == "student").first()
-    if not student:
-        raise HTTPException(status_code=404, detail="Student not found")
-
-    request = (
-        db.query(ExitRequest)
-        .filter(ExitRequest.student_id == student_id, ExitRequest.status == "completed")
-        .order_by(ExitRequest.requested_at.desc())
-        .first()
-    )
-    if not request:
-        raise HTTPException(status_code=404, detail="No completed exit request to check in")
-
-    request.status = "returned"
-    request.approved_at = datetime.utcnow()
-    db.commit()
-
-    parent_link = db.query(ParentStudentLink).filter(ParentStudentLink.student_id == student.id).first()
-    if parent_link:
-        parent = db.query(User).filter(User.id == parent_link.parent_id).first()
-        if parent:
-            await send_check_notification(parent.phone_number, student.name, "in")
-
-    return {"message": "Student checked in and parent notified"}
-
-@router.put("/{id}")
-def update_student(id: UUID, data: StudentUpdate, db: Session = Depends(get_db)):
-    student = db.query(User).filter(User.id == id, User.role == "student").first()
-    if not student:
-        raise HTTPException(status_code=404, detail="Student not found")
-
-    # Update student fields
-    for key, value in data.dict(exclude_unset=True, exclude={"parent"}).items():
-        setattr(student, key, value)
-
-    # Handle parent update or re-linking
-    if data.parent:
-        new_phone = data.parent.phone_number
-        new_name = data.parent.name
-
-        link = db.query(ParentStudentLink).filter(ParentStudentLink.student_id == id).first()
-        current_parent = db.query(User).filter(User.id == link.parent_id).first() if link else None
-
-        if new_phone:
-            existing_parent = db.query(User).filter(User.phone_number == new_phone, User.role == "parent").first()
-
-            if existing_parent:
-                # Link to existing parent
-                if link:
-                    link.parent_id = existing_parent.id
-                else:
-                    new_link = ParentStudentLink(student_id=id, parent_id=existing_parent.id)
-                    db.add(new_link)
-            else:
-                # Update current parent
-                if current_parent:
-                    if new_name:
-                        current_parent.name = new_name
-                    current_parent.phone_number = new_phone
-                else:
-                    raise HTTPException(status_code=404, detail="Current parent not found")
-
-    db.commit()
-    db.refresh(student)
-    return student
-
-@router.delete("/{id}")
-def delete_student(id: UUID, db: Session = Depends(get_db)):
-    student = db.query(User).filter(User.id == id, User.role == "student").first()
-    if not student:
-        raise HTTPException(status_code=404, detail="Student not found")
-
-    db.delete(student)
-    db.commit()
-    return {"message": "Student deleted"}
 
 
