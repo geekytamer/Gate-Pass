@@ -151,34 +151,60 @@ async def process_webhook(msg: dict, db: Session):
 
     elif user.role == "parent":
         otp_input = text.replace("approve", "").strip()
+
+        # Check for valid OTP
         otp = db.query(OTP).filter(
             OTP.user_id == user.id,
             OTP.otp_code == otp_input,
             OTP.is_verified == False,
             OTP.expires_at > datetime.utcnow()
         ).first()
-        if not otp:
-            send_whatsapp_message(phone, "❌ Invalid or expired approval code.")
-            return
-        otp.is_verified = True
 
-        link = db.query(ParentStudentLink).filter_by(parent_id=user.id).first()
-        request = db.query(ExitRequest).filter_by(
-            student_id=link.student_id,
-            status="pending"
-        ).order_by(ExitRequest.requested_at.desc()).first()
-
-        if request:
-            request.parent_id = user.id
-            request.status = "approved"
-            request.approved_at = datetime.utcnow()
+        if otp:
+            otp.is_verified = True
             db.commit()
 
-            student = db.query(User).get(request.student_id)
-            send_whatsapp_message(phone, "✅ Exit request approved.")
-            send_whatsapp_message(student.phone_number, "✅ Your parent has approved your exit request.")
+            # Get all students linked to this parent
+            links = db.query(ParentStudentLink).filter_by(parent_id=user.id).all()
+
+            approved_any = False
+            for link in links:
+                request = db.query(ExitRequest).filter_by(
+                    student_id=link.student_id,
+                    status="pending"
+                ).order_by(ExitRequest.requested_at.desc()).first()
+
+                if request:
+                    request.parent_id = user.id
+                    request.status = "approved"
+                    request.approved_at = datetime.utcnow()
+                    db.commit()
+
+                    student = db.query(User).get(request.student_id)
+                    send_whatsapp_message(student.phone_number, "✅ Your parent has approved your exit request.")
+                    approved_any = True
+
+            if approved_any:
+                send_whatsapp_message(phone, "✅ Exit request approved.")
+            else:
+                send_whatsapp_message(phone, "⚠️ OTP matched, but no pending requests found to approve.")
         else:
-            send_whatsapp_message(phone, "❌ No pending request to approve.")
+            # No OTP match — give info about the system and linked students
+            links = db.query(ParentStudentLink).filter_by(parent_id=user.id).all()
+            if not links:
+                send_whatsapp_message(phone, "👋 Hello! This is the GatePass system.\n\nYou are not currently linked to any students. Please contact the university.")
+                return
+
+            students = db.query(User).filter(User.id.in_([link.student_id for link in links])).all()
+            student_names = "\n".join([f"• {s.name}" for s in students])
+            send_whatsapp_message(phone, (
+                "👋 Hello! This is the GatePass system.\n\n"
+                "You're currently linked to the following student(s):\n"
+                f"{student_names}\n\n"
+                "✅ When any of them makes an exit request, you'll receive an approval message with a code.\n"
+                "❌ Your message didn't match a valid approval code, and there are no pending requests right now.\n"
+                "Feel free to reply again later!"
+            ))
 
 async def create_exit_request(db: Session, user: User, phone: str, method: str, bus_id=None):
     request = ExitRequest(
