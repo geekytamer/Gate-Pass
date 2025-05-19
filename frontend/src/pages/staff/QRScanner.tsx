@@ -59,7 +59,8 @@ export default function QRScanner() {
         const studentRes = await axios.get(`${API}/students/verify/${scannedId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        setStudent(studentRes.data);
+
+        setStudent({ ...studentRes.data, id: scannedId }); // 👈 Ensuring id is preserved
 
         try {
           const requestRes = await axios.get(`${API}/students/${scannedId}/latest-request`, {
@@ -97,9 +98,7 @@ export default function QRScanner() {
         headers: { Authorization: `Bearer ${token}` },
       });
       toast.success("✅ Student checked in");
-      setShowModal(false);
-      setScannedId("");
-      setStudent(null);
+      resetScannerState();
     } catch (err) {
       toast.error("❌ Check-in failed");
     }
@@ -112,12 +111,19 @@ export default function QRScanner() {
         headers: { Authorization: `Bearer ${token}` },
       });
       toast.success("✅ Student checked out");
-      setShowModal(false);
-      setScannedId("");
-      setStudent(null);
+      resetScannerState();
     } catch (err) {
       toast.error("❌ Check-out failed");
     }
+  };
+
+  const resetScannerState = () => {
+    setShowModal(false);
+    setScannedId("");
+    setStudent(null);
+    setLatestRequest(null);
+    setActivityLog([]);
+    setError("");
   };
 
   return (
@@ -179,11 +185,7 @@ export default function QRScanner() {
                 🚪 Check Out
               </button>
               <button
-                onClick={() => {
-                  setShowModal(false);
-                  setScannedId("");
-                  setStudent(null);
-                }}
+                onClick={resetScannerState}
                 className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700"
               >
                 Close
