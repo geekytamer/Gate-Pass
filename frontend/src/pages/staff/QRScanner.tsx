@@ -174,18 +174,34 @@ export default function QRScanner() {
             <div className="flex justify-end space-x-3 mt-6">
               <button
                 onClick={handleCheckIn}
-                className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+                disabled={!latestRequest || latestRequest.status !== "completed"}
+                className={`px-4 py-2 rounded text-white ${
+                  !latestRequest || latestRequest.status !== "completed"
+                    ? "bg-gray-400 cursor-not-allowed"
+                    : "bg-green-600 hover:bg-green-700"
+                }`}
               >
                 ✅ Check In
               </button>
+
               <button
                 onClick={handleCheckOut}
-                className="bg-yellow-600 text-white px-4 py-2 rounded hover:bg-yellow-700"
+                disabled={!latestRequest || latestRequest.status !== "approved"}
+                className={`px-4 py-2 rounded text-white ${
+                  !latestRequest || latestRequest.status !== "approved"
+                    ? "bg-gray-400 cursor-not-allowed"
+                    : "bg-yellow-600 hover:bg-yellow-700"
+                }`}
               >
                 🚪 Check Out
               </button>
+
               <button
-                onClick={resetScannerState}
+                onClick={() => {
+                  setShowModal(false);
+                  setScannedId("");
+                  setStudent(null);
+                }}
                 className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700"
               >
                 Close

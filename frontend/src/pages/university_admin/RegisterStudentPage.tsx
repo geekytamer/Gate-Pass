@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import axios from "axios";
 import { useAuth } from "../../context/AuthContext";
 
@@ -10,14 +10,32 @@ export default function RegisterStudentPage() {
   const [formData, setFormData] = useState({
     student_name: "",
     student_phone: "",
+    accommodation_id: "",
     parent_name: "",
     parent_phone: "",
   });
+
+  type Accommodation = { id: string; name: string };
+  const [accommodations, setAccommodations] = useState<Accommodation[]>([]);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  useEffect(() => {
+    const fetchAccommodations = async () => {
+      try {
+        const res = await axios.get(`${API}/accommodations`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setAccommodations(res.data);
+      } catch (err) {
+        console.error("Failed to load accommodations", err);
+      }
+    };
+    fetchAccommodations();
+  }, []);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
@@ -30,6 +48,7 @@ export default function RegisterStudentPage() {
         {
           student_name: formData.student_name,
           student_phone: formData.student_phone,
+          accommodation_id: formData.accommodation_id,
           parent: {
             name: formData.parent_name,
             phone_number: formData.parent_phone,
@@ -71,6 +90,20 @@ export default function RegisterStudentPage() {
               className="w-full border px-3 py-2 rounded"
               required
             />
+            <select
+              name="accommodation_id"
+              value={formData.accommodation_id}
+              onChange={handleChange}
+              className="w-full border px-3 py-2 rounded"
+              required
+            >
+              <option value="">-- Select Accommodation --</option>
+              {accommodations.map((acc: any) => (
+                <option key={acc.id} value={acc.id}>
+                  {acc.name}
+                </option>
+              ))}
+            </select>
           </div>
         );
       case 2:
@@ -102,18 +135,17 @@ export default function RegisterStudentPage() {
           <div>
             <h2 className="text-xl font-semibold mb-4">Review Information</h2>
             <ul className="text-sm space-y-2">
+              <li><strong>Student Name:</strong> {formData.student_name}</li>
+              <li><strong>Student Phone:</strong> {formData.student_phone}</li>
               <li>
-                <strong>Student Name:</strong> {formData.student_name}
+                <strong>Accommodation:</strong>{" "}
+                {
+                  accommodations.find((a: any) => a.id === formData.accommodation_id)?.name ||
+                  "N/A"
+                }
               </li>
-              <li>
-                <strong>Student Phone:</strong> {formData.student_phone}
-              </li>
-              <li>
-                <strong>Parent Name:</strong> {formData.parent_name}
-              </li>
-              <li>
-                <strong>Parent Phone:</strong> {formData.parent_phone}
-              </li>
+              <li><strong>Parent Name:</strong> {formData.parent_name}</li>
+              <li><strong>Parent Phone:</strong> {formData.parent_phone}</li>
             </ul>
           </div>
         );
