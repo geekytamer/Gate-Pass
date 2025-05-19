@@ -9,7 +9,7 @@ from app.models.exit_request import ExitRequest
 from app.models.user import ParentStudentLink, User
 from app.core.security import get_current_user, get_password_hash
 from app.schemas.exit_request import ExitRequestOut
-from app.schemas.student import ActivityEntry, ParentInfo, StudentCreate, StudentDetailsResponse
+from app.schemas.student import ActivityEntry, ParentInfo, RegisterWithParentInput, StudentCreate, StudentDetailsResponse, StudetWithParentCreate
 from app.services.qr import generate_qr_image
 from app.services.whatsapp import send_whatsapp_template_with_qr_link, upload_qr_to_whatsapp, send_whatsapp_template_with_qr
 
@@ -17,7 +17,7 @@ router = APIRouter()
 
 @router.post("/register-with-parent")
 async def register_student_with_parent(
-    data: StudentWithParentCreate,
+    payload: RegisterWithParentInput,
     db: Session = Depends(get_db),
     authorization: str = Header(...)
 ):
@@ -25,32 +25,41 @@ async def register_student_with_parent(
     if user.role != "university_admin":  # type: ignore
         raise HTTPException(status_code=403, detail="Unauthorized")
 
-    # Check for duplicate phone numbers
-    if db.query(User).filter(User.phone_number.in_([data.student_phone, data.parent.phone_number])).first():
-        raise HTTPException(status_code=400, detail="Phone number already used")
+    student_phone = payload.student_phone.lstrip("+")
+    parent_phone = payload.parent.phone_number.lstrip("+")
+
+    # Check if student already exists
+    if db.query(User).filter(User.phone_number == student_phone).first():
+        raise HTTPException(status_code=400, detail="Student already exists")
+
+    # Check if parent exists
+    parent = db.query(User).filter(User.phone_number == parent_phone, User.role == "parent").first()
+    if not parent:
+        parent = User(
+            id=uuid4(),
+            name=payload.parent.name,
+            phone_number=parent_phone,
+            role="parent"
+        )
+        db.add(parent)
+        db.flush()  # flush to get parent.id
+
+    # Get accommodation (optional)
+    accommodation = None
+    if payload.accommodation_id:
+        accommodation = db.query(Accommodation).filter(Accommodation.id == payload.accommodation_id).first()
+        if not accommodation:
+            raise HTTPException(status_code=404, detail="Accommodation not found")
 
     student_id = uuid4()
-
-    # Create parent
-    parent = User(
-        id=uuid4(),
-        name=data.parent.name,
-        phone_number=data.parent.phone_number,
-        role="parent",
-        hashed_password=get_password_hash("1234")
-    )
-    db.add(parent)
-    db.commit()
-    db.refresh(parent)
-
     # Create student
     student = User(
         id=student_id,
-        name=data.student_name,
-        phone_number=data.student_phone,
+        name=payload.student_name,
+        phone_number=payload.student_phone,
         role="student",
         hashed_password=get_password_hash("1234"),
-        accommodation_id=None,
+        accommodation_id=accommodation.id if accommodation else None,
         university_id=user.university_id
     )
     db.add(student)
@@ -71,7 +80,7 @@ async def register_student_with_parent(
 
     # ✅ Send QR message using public URL
     print(await send_whatsapp_template_with_qr_link(
-        phone_number=data.student_phone,
+        phone_number=payload.student_phone,
         qr_url=qr_url,
         student_name=student.name
     ))
