@@ -181,7 +181,7 @@ async def send_whatsapp_template_with_qr_link(phone_number: str, qr_url: str, st
         return response.json()
     
 async def send_check_notification(phone: str, student_name: str, check_type: str):
-    template_name = "student_checked_out" if check_type == "out" else "student_checked_in"
+    template_name = "student_checkout_notification" if check_type == "out" else "student_checkin_notification"
 
     payload = {
         "messaging_product": "whatsapp",
