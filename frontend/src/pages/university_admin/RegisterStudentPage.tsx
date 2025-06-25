@@ -26,8 +26,7 @@ export default function RegisterStudentPage() {
   useEffect(() => {
     const fetchAccommodations = async () => {
       try {
-        const accommodationsURL = new URL("/api/accommodations", API).toString();
-        const res = await axios.get(accommodationsURL, {
+        const res = await axios.get("https://dashboard.gatepassom.com/api/accommodations", {
           headers: { Authorization: `Bearer ${token}` },
         });
         setAccommodations(res.data);
