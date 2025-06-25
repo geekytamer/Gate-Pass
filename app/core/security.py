@@ -1,11 +1,11 @@
 from datetime import datetime, timedelta
 import random
 from uuid import UUID
-from fastapi import HTTPException
+from fastapi import Depends, HTTPException, status
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from app.core.config import settings
-from app.models.user import User
+from app.models.user import User, UserRole
 from sqlalchemy.orm import Session
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -49,6 +49,11 @@ def get_current_user(authorization: str, db: Session) -> User:
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
+    return user
+
+def require_main_admin(user: User = Depends(get_current_user)):
+    if user.role != UserRole.admin:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
     return user
 
 def generate_random_otp(length: int = 6) -> str:

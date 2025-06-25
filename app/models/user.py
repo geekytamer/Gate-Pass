@@ -30,7 +30,7 @@ class User(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     accommodation = relationship("Accommodation", back_populates="residents")
-    university = relationship("University", back_populates="students")
+    university = relationship("University", back_populates="users")
 
 class ParentStudentLink(Base):
     __tablename__ = "parent_student_link"

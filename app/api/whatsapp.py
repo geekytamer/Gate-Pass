@@ -19,6 +19,8 @@ from app.models.conversation_state import ConversationStateEnum
 from app.models.conversation_state import ConversationStateEnum
 from sqlalchemy import and_
 
+from app.utils.language import detect_language, translate
+
 
 router = APIRouter()
 
@@ -70,7 +72,7 @@ async def whatsapp_webhook(request: Request, background_tasks: BackgroundTasks, 
 
 async def process_webhook(msg: dict, db: Session):
     phone = msg["from"]
-    text = msg["text"]["body"].strip().lower()
+    text = msg["text"]["body"].strip()
     user = db.query(User).filter_by(phone_number=phone).first()
     if not user:
         return
@@ -78,14 +80,16 @@ async def process_webhook(msg: dict, db: Session):
     if user.role == "student":
         state = db.query(ConversationState).filter_by(student_id=user.id).first()
         if not state:
-            state = ConversationState(student_id=user.id, state=ConversationStateEnum.idle)
+            lang = detect_language(text)
+            state = ConversationState(student_id=user.id, state=ConversationStateEnum.idle, language=lang)
             db.add(state)
             db.commit()
+        lang = state.language
 
-        if text == "cancel":
+        if text.lower() == "cancel":
             state.state = ConversationStateEnum.idle
             db.commit()
-            send_whatsapp_message(phone, "✅ Your request has been cancelled.")
+            send_whatsapp_message(phone, translate("cancel_success", lang))
             return
 
         match state.state:
@@ -93,40 +97,33 @@ async def process_webhook(msg: dict, db: Session):
                 if is_exit_request(text):
                     state.state = ConversationStateEnum.awaiting_exit_method
                     db.commit()
-                    send_whatsapp_message(phone, "How will you exit?\n1. With a friend or relative\n2. Take a bus\n3. On your own")
+                    send_whatsapp_message(phone, translate("choose_exit_method", lang))
                 else:
-                    send_whatsapp_message(phone, "Send 'request exit' to start. You can cancel anytime by sending 'cancel'.")
+                    send_whatsapp_message(phone, translate("start_request", lang))
 
             case ConversationStateEnum.awaiting_exit_method:
                 method_map = {"1": "relative", "2": "bus", "3": "self"}
                 exit_method = method_map.get(text)
                 if not exit_method:
-                    send_whatsapp_message(phone, "Invalid choice. Reply with 1, 2, or 3.")
+                    send_whatsapp_message(phone, translate("invalid_exit_method", lang))
                     return
 
                 if exit_method == "bus":
                     buses = db.query(Bus).filter_by(university_id=user.university_id).all()
                     if not buses:
-                        # Re-initiate the conversation
                         state.state = ConversationStateEnum.awaiting_exit_method
                         db.commit()
-
-                        send_whatsapp_message(phone, (
-                            "❌ No buses available currently.\n\n"
-                            "How will you exit?\n"
-                            "1. With a friend or relative\n"
-                            "2. Take a bus\n"
-                            "3. On your own"
-                        ))
+                        send_whatsapp_message(phone, translate("no_buses", lang) + "\n\n" + translate("choose_exit_method", lang))
                         return
                     state.state = ConversationStateEnum.awaiting_bus
                     db.commit()
                     bus_list = "\n".join([f"{i+1}. {b.name} - {b.destination_district}" for i, b in enumerate(buses)])
-                    send_whatsapp_message(phone, f"Select your bus:\n{bus_list}")
+                    send_whatsapp_message(phone, translate("select_bus", lang) + bus_list)
                 else:
                     await create_exit_request(db, user, phone, exit_method)
                     state.state = ConversationStateEnum.idle
                     db.commit()
+                    send_whatsapp_message(phone, translate("request_sent", lang))
 
             case ConversationStateEnum.awaiting_bus:
                 buses = db.query(Bus).filter_by(university_id=user.university_id).all()
@@ -137,22 +134,23 @@ async def process_webhook(msg: dict, db: Session):
                         selected = buses[index]
                 else:
                     for bus in buses:
-                        if bus.name.lower() == text:
+                        if bus.name.lower() == text.lower():
                             selected = bus
                             break
 
                 if not selected:
-                    send_whatsapp_message(phone, "Invalid selection. Choose a valid bus number or name.")
+                    send_whatsapp_message(phone, translate("invalid_bus", lang))
                     return
 
                 await create_exit_request(db, user, phone, "bus", selected.id)
                 state.state = ConversationStateEnum.idle
                 db.commit()
+                send_whatsapp_message(phone, translate("request_sent", lang))
 
     elif user.role == "parent":
+        lang = "ar" if any("\u0600" <= ch <= "\u06FF" for ch in text) else "en"
         otp_input = text.replace("approve", "").strip()
 
-        # Check for valid OTP
         otp = db.query(OTP).filter(
             OTP.user_id == user.id,
             OTP.otp_code == otp_input,
@@ -164,47 +162,31 @@ async def process_webhook(msg: dict, db: Session):
             otp.is_verified = True
             db.commit()
 
-            # Get all students linked to this parent
             links = db.query(ParentStudentLink).filter_by(parent_id=user.id).all()
-
             approved_any = False
             for link in links:
-                request = db.query(ExitRequest).filter_by(
-                    student_id=link.student_id,
-                    status="pending"
-                ).order_by(ExitRequest.requested_at.desc()).first()
-
+                request = db.query(ExitRequest).filter_by(student_id=link.student_id, status="pending").order_by(ExitRequest.requested_at.desc()).first()
                 if request:
                     request.parent_id = user.id
                     request.status = "approved"
                     request.approved_at = datetime.utcnow()
                     db.commit()
-
                     student = db.query(User).get(request.student_id)
-                    send_whatsapp_message(student.phone_number, "✅ Your parent has approved your exit request.")
+                    send_whatsapp_message(student.phone_number, translate("student_notified", lang))
                     approved_any = True
 
             if approved_any:
-                send_whatsapp_message(phone, "✅ Exit request approved.")
+                send_whatsapp_message(phone, translate("parent_approved", lang))
             else:
-                send_whatsapp_message(phone, "⚠️ OTP matched, but no pending requests found to approve.")
+                send_whatsapp_message(phone, translate("otp_no_requests", lang))
         else:
-            # No OTP match — give info about the system and linked students
             links = db.query(ParentStudentLink).filter_by(parent_id=user.id).all()
             if not links:
-                send_whatsapp_message(phone, "👋 Hello! This is the GatePass system.\n\nYou are not currently linked to any students. Please contact the university.")
+                send_whatsapp_message(phone, translate("not_linked", lang))
                 return
-
-            students = db.query(User).filter(User.id.in_([link.student_id for link in links])).all()
-            student_names = "\n".join([f"• {s.name}" for s in students])
-            send_whatsapp_message(phone, (
-                "👋 Hello! This is the GatePass system.\n\n"
-                "You're currently linked to the following student(s):\n"
-                f"{student_names}\n\n"
-                "✅ When any of them makes an exit request, you'll receive an approval message with a code.\n"
-                "❌ Your message didn't match a valid approval code, and there are no pending requests right now.\n"
-                "Feel free to reply again later!"
-            ))
+            students = db.query(User).filter(User.id.in_([l.student_id for l in links])).all()
+            names = "\n".join([f"• {s.name}" for s in students])
+            send_whatsapp_message(phone, translate("intro_list", lang, students=names))
 
 async def create_exit_request(db: Session, user: User, phone: str, method: str, bus_id=None):
     request = ExitRequest(

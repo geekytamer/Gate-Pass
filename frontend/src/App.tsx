@@ -11,7 +11,13 @@ import StudentsPage from "./pages/university_admin/Students";
 import BusesPage from "./pages/university_admin/Buses";
 import StudentDetailsPage from "./pages/university_admin/StudentDetailsPage";
 import { ToastContainer } from "react-toastify";
+import AdminDashboard from "./pages/admin/Dashboard";
+import UniversitiesPage from "./pages/admin/UniversitiesPage";
+import UniversityDetailsPage from "./pages/admin/UniversityDetailsPage";
 import "react-toastify/dist/ReactToastify.css";
+import CreateUniversityPage from "./pages/admin/CreateUniversityPage";
+import CreateStaffPage from "./pages/admin/CreateStaffPage";
+import EditStaffPage from "./pages/admin/EditStaffPage";
 
 function App() {
   return (
@@ -65,6 +71,57 @@ function App() {
                 <StudentDetailsPage />
               </RoleProtectedRoute>
             } />
+            <Route
+              path="/admin/dashboard"
+              element={
+                <RoleProtectedRoute allowedRoles={["admin"]}>
+                  <AdminDashboard />
+                </RoleProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/admin/universities"
+              element={
+                <RoleProtectedRoute allowedRoles={["admin"]}>
+                  <UniversitiesPage />
+                </RoleProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/admin/universities/:id"
+              element={
+                <RoleProtectedRoute allowedRoles={["admin"]}>
+                  <UniversityDetailsPage />
+                </RoleProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/universities/create"
+              element={
+                <RoleProtectedRoute allowedRoles={["admin"]}>
+                  <CreateUniversityPage />
+                </RoleProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/universities/:id/staff/create"
+              element={
+                <RoleProtectedRoute allowedRoles={["admin"]}>
+                  <CreateStaffPage />
+                </RoleProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/admin/universities/:id/staff/:staffId/edit"
+              element={
+                <RoleProtectedRoute allowedRoles={["admin"]}>
+                  <EditStaffPage />
+                </RoleProtectedRoute>
+              }
+            />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from app.db.database import init_db
-from app.api import whatsapp, security, auth, university, students, accommodations  # import your routers
+from app.api import admin, whatsapp, security, auth, university, students, accommodations  # import your routers
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
@@ -16,7 +16,7 @@ init_db()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*",],  # Or ["*"] for dev only
+    allow_origins=["http://localhost:3000", "*"],  # Or ["*"] for dev only
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -29,6 +29,7 @@ app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
 app.include_router(university.router, prefix="/api/university", tags=["University"])
 app.include_router(students.router, prefix="/api/students", tags=["Students"])
 app.include_router(accommodations.router, prefix="/api/accommodations", tags=["Accommodations"])
+app.include_router(admin.router, prefix="/api/admin") 
 @app.get("/")
 def root():
     return {"message": "GatePass API is running!"}
