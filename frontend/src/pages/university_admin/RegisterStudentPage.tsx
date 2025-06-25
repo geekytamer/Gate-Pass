@@ -21,6 +21,8 @@ export default function RegisterStudentPage() {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
 
+  console.log(API);
+
   useEffect(() => {
     const fetchAccommodations = async () => {
       try {
