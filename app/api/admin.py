@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from uuid import UUID, uuid4
 
 from app.db.session import get_db
-from app.core.security import get_current_user
+from app.core.security import get_current_user, get_password_hash
 from app.models.user import User, UserRole
 from app.models.university import University
 
@@ -122,7 +122,7 @@ def create_staff_for_university(university_id: UUID, payload: dict, db: Session 
         id=uuid4(),
         name=payload["name"],
         phone_number=payload["phone_number"],
-        hashed_password=payload["hashed_password"],
+        hashed_password = get_password_hash(payload["hashed_password"]),
         role=UserRole(payload["role"]),
         university_id=university_id,
     )
