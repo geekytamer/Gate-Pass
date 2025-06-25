@@ -26,7 +26,7 @@ export default function RegisterStudentPage() {
   useEffect(() => {
     const fetchAccommodations = async () => {
       try {
-        const accommodationsURL = new URL("/accommodations", API).toString();
+        const accommodationsURL = new URL("accommodations", API).toString();
         const res = await axios.get(accommodationsURL, {
           headers: { Authorization: `Bearer ${token}` },
         });
