@@ -1,6 +1,6 @@
 # app/models/conversation_state.py
 
-from sqlalchemy import Column, Enum as SqlEnum, UUID, ForeignKey, DateTime, String
+from sqlalchemy import Column, Enum as SqlEnum, UUID, ForeignKey, DateTime, String, Text
 from app.models.base import Base
 from uuid import uuid4
 from datetime import datetime
@@ -21,4 +21,5 @@ class ConversationState(Base):
     state = Column(SqlEnum(ConversationStateEnum, name="conversation_state_enum"), default=ConversationStateEnum.idle)
     selected_bus_id = Column(UUID(as_uuid=True), nullable=True)
     language = Column(String, default="en")
+    temp_data = Column(Text, nullable=True)  # ✅ Add this line
     updated_at = Column(DateTime, default=datetime.utcnow)

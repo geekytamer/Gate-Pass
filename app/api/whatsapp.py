@@ -87,6 +87,9 @@ async def process_webhook(msg: dict, db: Session):
             
         if state.state == ConversationStateEnum.idle:
             lang = detect_language(text)
+            if lang != state.language:
+                state.language = lang
+                db.commit()
         else:
             lang = state.language
 
