@@ -10,7 +10,7 @@ async def send_sms(to: str, message: str):
     url = f"https://api.twilio.com/2010-04-01/Accounts/{ACCOUNT_SID}/Messages.json"
     auth = (ACCOUNT_SID, AUTH_TOKEN)
     data = {
-        "To": to,
+        "To": '+'+to,
         "From": FROM_PHONE,
         "Body": message,
     }
