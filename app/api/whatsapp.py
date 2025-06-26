@@ -84,8 +84,11 @@ async def process_webhook(msg: dict, db: Session):
             state = ConversationState(student_id=user.id, state=ConversationStateEnum.idle, language=lang)
             db.add(state)
             db.commit()
+            
         if state.state == ConversationStateEnum.idle:
             lang = detect_language(text)
+        else:
+            lang = state.language
 
         if text.lower() == "cancel":
             state.state = ConversationStateEnum.idle
