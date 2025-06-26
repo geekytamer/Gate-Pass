@@ -6,7 +6,7 @@ from app.models.accommodation import Accommodation
 
 router = APIRouter()
 
-@router.get("/")
+@router.get("")
 def list_accommodations(
     db: Session = Depends(get_db),
     authorization: str = Header(...) # no ": User"
