@@ -21,4 +21,5 @@ class ExitRequest(Base):
     exit_method = Column(String, nullable=False)
     status = Column(Enum(ExitStatus, name="exitstatus"), nullable=False, default=ExitStatus.pending)
     requested_at = Column(DateTime, default=datetime.utcnow)
+    relative_name = Column(String, nullable=True)  # Name of the relative picking up the student
     approved_at = Column(DateTime, nullable=True)
