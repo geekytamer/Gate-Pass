@@ -3,7 +3,7 @@ import base64
 
 # Replace with your actual Twilio credentials and sender number
 ACCOUNT_SID = "AC0218e19f1d0e94f44d09b5f757d2319f"
-AUTH_TOKEN = "1c8ddd365c4e48b6e4f65d9500233f88"  # Replace with your real Auth Token
+AUTH_TOKEN = "489b2a318455009692984d93113f3616"  # Replace with your real Auth Token
 FROM_PHONE = "+18568983362"  # Your Twilio trial number
 
 async def send_sms(to: str, message: str):
