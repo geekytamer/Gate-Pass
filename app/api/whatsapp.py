@@ -84,7 +84,8 @@ async def process_webhook(msg: dict, db: Session):
             state = ConversationState(student_id=user.id, state=ConversationStateEnum.idle, language=lang)
             db.add(state)
             db.commit()
-        lang = detect_language(text)
+        if state.state == ConversationStateEnum.idle:
+            lang = detect_language(text)
 
         if text.lower() == "cancel":
             state.state = ConversationStateEnum.idle
@@ -110,42 +111,49 @@ async def process_webhook(msg: dict, db: Session):
 
                 if exit_method == "bus":
                     buses = db.query(Bus).filter_by(university_id=user.university_id).all()
-                    if not buses:
-                        state.state = ConversationStateEnum.awaiting_exit_method
-                        db.commit()
-                        send_whatsapp_message(phone, translate("no_buses", lang) + "\n\n" + translate("choose_exit_method", lang))
+                    valid_buses = [
+                        bus for bus in buses if db.query(ExitRequest)
+                        .filter_by(bus_id=bus.id, status="approved")
+                        .count() < bus.capacity
+                    ]
+                    if not valid_buses:
+                        send_whatsapp_message(phone, translate("no_buses", lang))
                         return
                     state.state = ConversationStateEnum.awaiting_bus
                     db.commit()
-                    bus_list = "\n".join([f"{i+1}. {b.name} - {b.destination_district}" for i, b in enumerate(buses)])
-                    send_whatsapp_message(phone, translate("select_bus", lang) + bus_list)
+                    bus_list = "\n".join([f"{i+1}. {b.name} - {b.destination_district}" for i, b in enumerate(valid_buses)])
+                    send_whatsapp_message(phone, translate("select_bus", lang) + "\n" + bus_list)
+                    state.temp_data = ",".join([str(b.id) for b in valid_buses])
+                    db.commit()
+                elif exit_method == "relative":
+                    state.state = ConversationStateEnum.awaiting_relative_name
+                    db.commit()
+                    send_whatsapp_message(phone, translate("ask_relative_name", lang))
                 else:
-                    await create_exit_request(db, user, phone, exit_method)
+                    await create_exit_request(db, user, phone, "self")
                     state.state = ConversationStateEnum.idle
                     db.commit()
                     send_whatsapp_message(phone, translate("request_sent", lang))
 
-            case ConversationStateEnum.awaiting_bus:
-                buses = db.query(Bus).filter_by(university_id=user.university_id).all()
-                selected = None
-                if text.isdigit():
-                    index = int(text) - 1
-                    if 0 <= index < len(buses):
-                        selected = buses[index]
-                else:
-                    for bus in buses:
-                        if bus.name.lower() == text.lower():
-                            selected = bus
-                            break
-
-                if not selected:
-                    send_whatsapp_message(phone, translate("invalid_bus", lang))
-                    return
-
-                await create_exit_request(db, user, phone, "bus", selected.id)
+            case ConversationStateEnum.awaiting_relative_name:
+                relative_name = text.strip()
+                await create_exit_request(db, user, phone, "relative", relative_name=relative_name)
                 state.state = ConversationStateEnum.idle
                 db.commit()
-                send_whatsapp_message(phone, translate("request_sent", lang))
+                send_whatsapp_message(phone, translate("request_sent_relative", lang, name=relative_name))
+
+            case ConversationStateEnum.awaiting_bus:
+                selected_index = int(text) - 1 if text.isdigit() else None
+                bus_ids = state.temp_data.split(",") if state.temp_data else []
+                if selected_index is not None and 0 <= selected_index < len(bus_ids):
+                    bus_id = bus_ids[selected_index]
+                    await create_exit_request(db, user, phone, "bus", bus_id=bus_id, auto_approve=True)
+                    state.state = ConversationStateEnum.idle
+                    db.commit()
+                    send_whatsapp_message(phone, translate("bus_confirmed", lang))
+                else:
+                    send_whatsapp_message(phone, translate("invalid_bus", lang))
+
 
     elif user.role == "parent":
         lang = "ar" if any("\u0600" <= ch <= "\u06FF" for ch in text) else "en"
@@ -188,31 +196,41 @@ async def process_webhook(msg: dict, db: Session):
             names = "\n".join([f"• {s.name}" for s in students])
             send_whatsapp_message(phone, translate("intro_list", lang, students=names))
 
-async def create_exit_request(db: Session, user: User, phone: str, method: str, bus_id=None):
-    request = ExitRequest(
+async def create_exit_request(db: Session, user: User, phone: str, method: str, bus_id=None, relative_name=None, auto_approve=False):
+    req = ExitRequest(
         id=uuid4(),
         student_id=user.id,
         parent_id=None,
         bus_id=bus_id,
         exit_method=method,
-        status="pending"
+        relative_name=relative_name,
+        status="approved" if auto_approve else "pending",
+        approved_at=datetime.utcnow() if auto_approve else None,
+        requested_at=datetime.utcnow()
     )
-    db.add(request)
+    db.add(req)
+    db.commit()
+
+    if auto_approve:
+        return
 
     link = db.query(ParentStudentLink).filter_by(student_id=user.id).first()
     if not link:
-        send_whatsapp_message(phone, "⚠️ No parent linked. Contact admin.")
+        send_whatsapp_message(phone, translate("no_parent", "en"))
         return
 
     parent = db.query(User).get(link.parent_id)
+    code = generate_random_otp()
     otp = OTP(
         id=uuid4(),
         user_id=parent.id,
-        otp_code=(code := generate_random_otp()),
+        otp_code=code,
         expires_at=datetime.utcnow() + timedelta(minutes=5),
         is_verified=False
     )
     db.add(otp)
     db.commit()
-    await send_sms(parent.phone_number, f"خروج من {user.name}، رمز الموافقة: {code}")
-    send_whatsapp_message(phone, "Request sent to your parent.")
+
+    relative_info = f" مع {relative_name}" if relative_name else ""
+    await send_sms(parent.phone_number, f"خروج من {user.name}{relative_info}، رمز الموافقة: {code}")
+    send_whatsapp_message(phone, translate("otp_sent", "en"))

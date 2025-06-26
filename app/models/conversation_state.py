@@ -6,10 +6,12 @@ from uuid import uuid4
 from datetime import datetime
 import enum
 
+# ✅ Extend ConversationStateEnum
 class ConversationStateEnum(str, enum.Enum):
     idle = "idle"
     awaiting_exit_method = "awaiting_exit_method"
     awaiting_bus = "awaiting_bus"
+    awaiting_relative_name = "awaiting_relative_name"
 
 class ConversationState(Base):
     __tablename__ = "conversation_state"
