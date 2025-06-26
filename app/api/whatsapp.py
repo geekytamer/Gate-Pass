@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Request, Depends, BackgroundTasks, Query
 from sqlalchemy.orm import Session
-from uuid import uuid4
+from uuid import UUID, uuid4
 from datetime import datetime, timedelta
 from app.db.session import get_db
 from app.models.user import User, ParentStudentLink
@@ -152,7 +152,7 @@ async def process_webhook(msg: dict, db: Session):
                 selected_index = int(text) - 1 if text.isdigit() else None
                 bus_ids = state.temp_data.split(",") if state.temp_data else []
                 if selected_index is not None and 0 <= selected_index < len(bus_ids):
-                    bus_id = bus_ids[selected_index]
+                    bus_id = UUID(bus_ids[selected_index])
                     await create_exit_request(db, user, phone, "bus", bus_id=bus_id, auto_approve=True)
                     state.state = ConversationStateEnum.idle
                     db.commit()
