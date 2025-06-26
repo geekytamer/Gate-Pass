@@ -6,6 +6,7 @@ ACCOUNT_SID = "AC0218e19f1d0e94f44d09b5f757d2319f"
 AUTH_TOKEN = "1c8ddd365c4e48b6e4f65d9500233f88"  # Replace with your real Auth Token
 FROM_PHONE = "+18568983362"  # Your Twilio trial number
 
+
 async def send_sms(to: str, message: str):
     url = f"https://api.twilio.com/2010-04-01/Accounts/{ACCOUNT_SID}/Messages.json"
     auth = (ACCOUNT_SID, AUTH_TOKEN)
