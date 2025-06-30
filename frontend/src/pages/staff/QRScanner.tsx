@@ -3,6 +3,7 @@ import { Html5QrcodeScanner } from "html5-qrcode";
 import { useAuth } from "../../context/AuthContext";
 import axios from "axios";
 import toast, { Toaster } from "react-hot-toast";
+import { useTranslation } from "react-i18next";
 
 interface ExitRequest {
   exit_method: string;
@@ -28,6 +29,7 @@ export default function QRScanner() {
   const [activityLog, setActivityLog] = useState([]);
   const [error, setError] = useState("");
   const [showModal, setShowModal] = useState(false);
+  const { t, i18n } = useTranslation();
 
   useEffect(() => {
     if (!scannerRef.current) {
@@ -44,12 +46,12 @@ export default function QRScanner() {
         },
         (err) => {
           console.warn("QR error", err);
-          setError("❌ Failed to scan QR code.");
+          setError(t("scanner.error"));
         }
       );
       scannerRef.current = scanner;
     }
-  }, []);
+  }, [t, scannedId]);
 
   useEffect(() => {
     const fetchDetails = async () => {
@@ -59,8 +61,7 @@ export default function QRScanner() {
         const studentRes = await axios.get(`${API}/students/verify/${scannedId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-
-        setStudent({ ...studentRes.data, id: scannedId }); // 👈 Ensuring id is preserved
+        setStudent({ ...studentRes.data, id: scannedId });
 
         try {
           const requestRes = await axios.get(`${API}/students/${scannedId}/latest-request`, {
@@ -72,7 +73,7 @@ export default function QRScanner() {
             setLatestRequest(null);
           } else {
             console.error(err);
-            setError("❌ Unable to fetch latest request.");
+            setError(t("scanner.latest_request_error"));
           }
         }
 
@@ -80,16 +81,15 @@ export default function QRScanner() {
           headers: { Authorization: `Bearer ${token}` },
         });
         setActivityLog(logRes.data);
-
         setShowModal(true);
       } catch (err) {
         console.error(err);
-        setError("❌ Unable to fetch student details.");
+        setError(t("scanner.student_fetch_error"));
       }
     };
 
     fetchDetails();
-  }, [scannedId]);
+  }, [scannedId, token, t]);
 
   const handleCheckIn = async () => {
     if (!student) return;
@@ -97,10 +97,10 @@ export default function QRScanner() {
       await axios.post(`${API}/students/${student.id}/check-in`, null, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      toast.success("✅ Student checked in");
+      toast.success(t("scanner.checkin_success"));
       resetScannerState();
     } catch (err) {
-      toast.error("❌ Check-in failed");
+      toast.error(t("scanner.checkin_fail"));
     }
   };
 
@@ -110,10 +110,10 @@ export default function QRScanner() {
       await axios.post(`${API}/students/${student.id}/check-out`, null, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      toast.success("✅ Student checked out");
+      toast.success(t("scanner.checkout_success"));
       resetScannerState();
     } catch (err) {
-      toast.error("❌ Check-out failed");
+      toast.error(t("scanner.checkout_fail"));
     }
   };
 
@@ -127,11 +127,20 @@ export default function QRScanner() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 p-6">
+    <div className="min-h-screen bg-gray-100 p-6" dir={i18n.dir()}>
       <Toaster />
-      <h2 className="text-xl font-bold text-center mb-4">Scan Student QR</h2>
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-bold text-center">{t("scanner.title")}</h2>
+        <button
+          className="bg-blue-600 text-white px-3 py-1 rounded"
+          onClick={() =>
+            i18n.changeLanguage(i18n.language === "en" ? "ar" : "en")
+          }
+        >
+          {i18n.language === "en" ? "العربية" : "English"}
+        </button>
+      </div>
       <div id="qr-reader" className="mx-auto max-w-md" />
-
       {error && <p className="text-red-600 mt-4 text-center">{error}</p>}
 
       {showModal && student && (
@@ -139,32 +148,33 @@ export default function QRScanner() {
           <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-lg">
             <h3 className="text-xl font-bold mb-2">{student.name}</h3>
             <p className="text-sm text-gray-700 mb-2">📞 {student.phone_number}</p>
-            <p className="text-sm text-gray-700 mb-2">🏢 {student.accommodation || "No accommodation assigned"}</p>
+            <p className="text-sm text-gray-700 mb-2">
+              🏢 {student.accommodation || t("scanner.no_accommodation")}
+            </p>
 
             <div className="mt-4">
-              <h4 className="font-semibold">Latest Exit Request</h4>
+              <h4 className="font-semibold">{t("scanner.latest_request")}</h4>
               {latestRequest ? (
                 <>
-                  <p>Method: {latestRequest.exit_method}</p>
-                  <p>Status: {latestRequest.status}</p>
-                  <p>Requested: {new Date(latestRequest.requested_at).toLocaleString()}</p>
+                  <p>{t("scanner.method")}: {latestRequest.exit_method}</p>
+                  <p>{t("scanner.status")}: {latestRequest.status}</p>
+                  <p>{t("scanner.requested")}: {new Date(latestRequest.requested_at).toLocaleString()}</p>
                   {latestRequest.approved_at && (
-                    <p>Approved: {new Date(latestRequest.approved_at).toLocaleString()}</p>
+                    <p>{t("scanner.approved")}: {new Date(latestRequest.approved_at).toLocaleString()}</p>
                   )}
                 </>
               ) : (
-                <p className="text-gray-500 italic">No previous exit requests found for this student.</p>
+                <p className="text-gray-500 italic">{t("scanner.no_request_found")}</p>
               )}
             </div>
 
             {activityLog.length > 0 && (
               <div className="mt-4">
-                <h4 className="font-semibold">Activity Log</h4>
+                <h4 className="font-semibold">{t("scanner.activity_log")}</h4>
                 <ul className="text-sm list-disc pl-5 space-y-1">
                   {activityLog.map((entry: any, idx) => (
                     <li key={idx}>
-                      {entry.exit_method} - {entry.status} @{" "}
-                      {new Date(entry.requested_at).toLocaleString()}
+                      {entry.exit_method} - {entry.status} @ {new Date(entry.requested_at).toLocaleString()}
                     </li>
                   ))}
                 </ul>
@@ -181,7 +191,7 @@ export default function QRScanner() {
                     : "bg-green-600 hover:bg-green-700"
                 }`}
               >
-                ✅ Check In
+                ✅ {t("scanner.checkin")}
               </button>
 
               <button
@@ -193,18 +203,14 @@ export default function QRScanner() {
                     : "bg-yellow-600 hover:bg-yellow-700"
                 }`}
               >
-                🚪 Check Out
+                🚪 {t("scanner.checkout")}
               </button>
 
               <button
-                onClick={() => {
-                  setShowModal(false);
-                  setScannedId("");
-                  setStudent(null);
-                }}
+                onClick={resetScannerState}
                 className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700"
               >
-                Close
+                {t("scanner.close")}
               </button>
             </div>
           </div>

@@ -36,3 +36,16 @@
     transform: rotate(360deg);
   }
 }
+
+.btn-blue {
+  @apply bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded shadow;
+}
+.btn-green {
+  @apply bg-green-600 hover:bg-green-700 text-white py-3 px-6 rounded shadow;
+}
+.btn-purple {
+  @apply bg-purple-600 hover:bg-purple-700 text-white py-3 px-6 rounded shadow;
+}
+.btn-red {
+  @apply bg-red-600 hover:bg-red-700 text-white py-3 px-6 rounded shadow;
+}

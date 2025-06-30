@@ -1,0 +1,14 @@
+{
+  "dashboard": {
+    "welcome": "Welcome, {{name}} 👋",
+    "loggedInAs": "You are logged in as",
+    "manageUniversities": "Manage Universities",
+    "manageAccommodations": "Manage Accommodations",
+    "students": "Students",
+    "registerStudent": "Register Student",
+    "manageBuses": "Manage Buses",
+    "exitRequests": "Exit Requests",
+    "scanQr": "Scan QR Code",
+    "logout": "Logout"
+  }
+}

@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { useAuth } from "../../context/AuthContext";
 import toast, { Toaster } from "react-hot-toast";
+import { useTranslation } from "react-i18next";
 
 const API = process.env.REACT_APP_API_URL || "http://localhost:8000";
 
@@ -10,6 +11,7 @@ export default function StudentDetailsPage() {
   const { token } = useAuth();
   const { id } = useParams();
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation(); // ✅ no namespace
 
   const [student, setStudent] = useState<any>(null);
   const [formData, setFormData] = useState({
@@ -38,7 +40,7 @@ export default function StudentDetailsPage() {
           parent_phone: res.data.parent?.phone_number || "",
         });
       } catch (err) {
-        setError("❌ Failed to fetch student details");
+        setError(t("university.fetch_error"));
       } finally {
         setLoading(false);
       }
@@ -64,40 +66,43 @@ export default function StudentDetailsPage() {
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      toast.success("✅ Student updated successfully");
+      toast.success(t("university.update_success"));
     } catch (err) {
-      toast.error("❌ Failed to update student");
+      toast.error(t("university.update_failed"));
     }
   };
 
   const handleDelete = async () => {
-    if (!window.confirm("Are you sure you want to delete this student?")) return;
+    if (!window.confirm(t("university.delete_confirm"))) return;
 
     try {
       await axios.delete(`${API}/students/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      toast.success("🗑️ Student deleted");
+      toast.success(t("university.delete_success"));
       setTimeout(() => {
         navigate("/university/students");
       }, 1500);
     } catch (err) {
-      toast.error("❌ Failed to delete student");
+      toast.error(t("university.delete_failed"));
     }
   };
 
-  if (loading) return <p className="text-center mt-6">Loading...</p>;
+  if (loading) return <p className="text-center mt-6">{t("university.loading")}</p>;
   if (error) return <p className="text-red-500 text-center mt-6">{error}</p>;
 
   return (
-    <div className="max-w-3xl mx-auto p-6 bg-white rounded shadow mt-6">
+    <div
+      className="max-w-3xl mx-auto p-6 bg-white rounded shadow mt-6"
+      dir={i18n.language === "ar" ? "rtl" : "ltr"}
+    >
       <Toaster />
 
-      <h2 className="text-2xl font-bold mb-4">Edit Student</h2>
+      <h2 className="text-2xl font-bold mb-4">{t("university.edit_student")}</h2>
 
       <div className="space-y-4">
         <div>
-          <label className="block text-sm font-medium">Student Name</label>
+          <label className="block text-sm font-medium">{t("university.student_name")}</label>
           <input
             type="text"
             name="name"
@@ -108,7 +113,7 @@ export default function StudentDetailsPage() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium">Phone Number</label>
+          <label className="block text-sm font-medium">{t("university.phone_number")}</label>
           <input
             type="text"
             name="phone_number"
@@ -119,7 +124,7 @@ export default function StudentDetailsPage() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium">Accommodation</label>
+          <label className="block text-sm font-medium">{t("university.accommodation")}</label>
           <input
             type="text"
             name="accommodation"
@@ -130,10 +135,10 @@ export default function StudentDetailsPage() {
         </div>
 
         <div className="mt-6 border-t pt-4">
-          <h3 className="text-lg font-semibold mb-2">Parent Info</h3>
+          <h3 className="text-lg font-semibold mb-2">{t("university.parent_info")}</h3>
 
           <div>
-            <label className="block text-sm font-medium">Parent Name</label>
+            <label className="block text-sm font-medium">{t("university.parent_name")}</label>
             <input
               type="text"
               name="parent_name"
@@ -144,7 +149,7 @@ export default function StudentDetailsPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium">Parent Phone</label>
+            <label className="block text-sm font-medium">{t("university.parent_phone")}</label>
             <input
               type="text"
               name="parent_phone"
@@ -161,14 +166,14 @@ export default function StudentDetailsPage() {
           onClick={handleUpdate}
           className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
         >
-          💾 Save Changes
+          💾 {t("university.save_changes")}
         </button>
 
         <button
           onClick={handleDelete}
           className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded"
         >
-          🗑️ Delete Student
+          🗑️ {t("university.delete_student")}
         </button>
       </div>
     </div>

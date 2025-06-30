@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { useAuth } from "../../context/AuthContext";
+import { useTranslation } from "react-i18next";
 
 const API = process.env.REACT_APP_API_URL || "http://localhost:8000";
 
 export default function BusesPage() {
   const { token } = useAuth();
+  const { t, i18n } = useTranslation();
 
   const [buses, setBuses] = useState([]);
   const [accommodations, setAccommodations] = useState([]);
@@ -16,7 +18,6 @@ export default function BusesPage() {
   });
   const [busToDelete, setBusToDelete] = useState<string | null>(null);
 
-  
   useEffect(() => {
     if (!token) return;
 
@@ -57,7 +58,7 @@ export default function BusesPage() {
       });
       setBuses(res.data);
     } catch {
-      alert("❌ Failed to add bus.");
+      alert(t("university.errorAddBus"));
     }
   };
 
@@ -70,24 +71,32 @@ export default function BusesPage() {
       setBuses(buses.filter((b: any) => b.id !== busToDelete));
       setBusToDelete(null);
     } catch {
-      alert("❌ Failed to delete bus.");
+      alert(t("university.errorDeleteBus"));
     }
   };
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-6">Manage Buses</h1>
+    <div className="p-6" dir={i18n.language === "ar" ? "rtl" : "ltr"}>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">{t("university.manageBuses")}</h1>
+        <button
+          onClick={() => i18n.changeLanguage(i18n.language === "ar" ? "en" : "ar")}
+          className="text-sm text-blue-600 underline"
+        >
+          {i18n.language === "ar" ? "English" : "العربية"}
+        </button>
+      </div>
 
       <form
         onSubmit={handleBusSubmit}
         className="space-y-4 mb-10 bg-white p-6 shadow rounded max-w-xl"
       >
-        <h2 className="text-lg font-semibold">Add New Bus</h2>
+        <h2 className="text-lg font-semibold">{t("university.addNewBus")}</h2>
 
         <input
           type="text"
           name="name"
-          placeholder="Bus Name"
+          placeholder={t("university.busName")}
           value={form.name}
           onChange={handleChange}
           required
@@ -97,7 +106,7 @@ export default function BusesPage() {
         <input
           type="text"
           name="destination_district"
-          placeholder="Destination"
+          placeholder={t("university.destination")}
           value={form.destination_district}
           onChange={handleChange}
           required
@@ -111,7 +120,7 @@ export default function BusesPage() {
           required
           className="w-full border px-3 py-2 rounded"
         >
-          <option value="">Select Accommodation</option>
+          <option value="">{t("university.selectAccommodation")}</option>
           {accommodations.map((acc: any) => (
             <option key={acc.id} value={acc.id}>
               {acc.name}
@@ -123,17 +132,17 @@ export default function BusesPage() {
           type="submit"
           className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
         >
-          Add Bus
+          {t("university.addBus")}
         </button>
       </form>
 
       <table className="w-full bg-white shadow rounded">
         <thead className="bg-gray-200 text-left text-sm">
           <tr>
-            <th className="p-2">Name</th>
-            <th className="p-2">Destination</th>
-            <th className="p-2">Accommodation</th>
-            <th className="p-2">Actions</th>
+            <th className="p-2">{t("university.busName")}</th>
+            <th className="p-2">{t("university.destination")}</th>
+            <th className="p-2">{t("university.accommodation")}</th>
+            <th className="p-2">{t("university.actions")}</th>
           </tr>
         </thead>
         <tbody>
@@ -147,7 +156,7 @@ export default function BusesPage() {
                   onClick={() => setBusToDelete(bus.id)}
                   className="text-red-600 hover:underline"
                 >
-                  Delete
+                  {t("university.delete")}
                 </button>
               </td>
             </tr>
@@ -155,25 +164,22 @@ export default function BusesPage() {
         </tbody>
       </table>
 
-      {/* Delete Confirmation Modal */}
       {busToDelete && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded shadow-lg w-full max-w-md">
-            <p className="mb-4 text-lg font-medium">
-              Are you sure you want to delete this bus?
-            </p>
+            <p className="mb-4 text-lg font-medium">{t("university.confirmDeleteBus")}</p>
             <div className="flex justify-end space-x-3">
               <button
                 onClick={() => setBusToDelete(null)}
                 className="bg-gray-300 px-4 py-2 rounded"
               >
-                Cancel
+                {t("university.cancel")}
               </button>
               <button
                 onClick={handleDelete}
                 className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
               >
-                Delete
+                {t("university.delete")}
               </button>
             </div>
           </div>

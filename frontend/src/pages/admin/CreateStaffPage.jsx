@@ -1,14 +1,16 @@
-// src/pages/admin/CreateStaffPage.jsx
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { toast } from "react-toastify";
+import { useTranslation } from "react-i18next";
 
 const API = process.env.REACT_APP_API_URL;
 
 export default function CreateStaffPage() {
   const { id: universityId } = useParams();
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
+
   const [form, setForm] = useState({
     name: "",
     phone_number: "",
@@ -29,26 +31,62 @@ export default function CreateStaffPage() {
         hashed_password: form.password,
         role: form.role,
       });
-      toast.success("✅ Staff member created");
+      toast.success(t("admin.successCreated"));
       navigate(`/admin/universities/${universityId}`);
     } catch (err) {
       console.error(err);
-      toast.error("❌ Failed to create staff member");
+      toast.error(t("admin.failedCreated"));
     }
   };
 
   return (
-    <div className="max-w-lg mx-auto mt-10 p-6 bg-white rounded shadow">
-      <h2 className="text-2xl font-bold mb-6">➕ Add Staff Member</h2>
+    <div className="max-w-lg mx-auto mt-10 p-6 bg-white rounded shadow" dir={i18n.language === "ar" ? "rtl" : "ltr"}>
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-bold">{t("admin.addStaff")}</h2>
+        <button
+          onClick={() => i18n.changeLanguage(i18n.language === "ar" ? "en" : "ar")}
+          className="text-sm text-blue-600 underline"
+        >
+          {i18n.language === "ar" ? "English" : "العربية"}
+        </button>
+      </div>
       <form onSubmit={handleSubmit} className="space-y-4">
-        <input name="name" type="text" placeholder="Name" className="input w-full" onChange={handleChange} required />
-        <input name="phone_number" type="text" placeholder="Phone number" className="input w-full" onChange={handleChange} required />
-        <input name="password" type="password" placeholder="Password" className="input w-full" onChange={handleChange} required />
-        <select name="role" className="select w-full" onChange={handleChange} value={form.role}>
-          <option value="staff">Staff</option>
-          <option value="university_admin">University Admin</option>
+        <input
+          name="name"
+          type="text"
+          placeholder={t("admin.name")}
+          className="input w-full"
+          onChange={handleChange}
+          required
+        />
+        <input
+          name="phone_number"
+          type="text"
+          placeholder={t("admin.phone")}
+          className="input w-full"
+          onChange={handleChange}
+          required
+        />
+        <input
+          name="password"
+          type="password"
+          placeholder={t("admin.password")}
+          className="input w-full"
+          onChange={handleChange}
+          required
+        />
+        <select
+          name="role"
+          className="select w-full"
+          onChange={handleChange}
+          value={form.role}
+        >
+          <option value="staff">{t("admin.role.staff")}</option>
+          <option value="university_admin">{t("admin.role.university_admin")}</option>
         </select>
-        <button type="submit" className="btn btn-primary w-full">Save</button>
+        <button type="submit" className="btn btn-primary w-full">
+          {t("admin.save")}
+        </button>
       </form>
     </div>
   );

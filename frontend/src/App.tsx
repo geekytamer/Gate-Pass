@@ -18,6 +18,7 @@ import "react-toastify/dist/ReactToastify.css";
 import CreateUniversityPage from "./pages/admin/CreateUniversityPage";
 import CreateStaffPage from "./pages/admin/CreateStaffPage";
 import EditStaffPage from "./pages/admin/EditStaffPage";
+import './i18n';
 
 function App() {
   return (

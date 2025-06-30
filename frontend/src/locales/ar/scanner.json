@@ -1,0 +1,21 @@
+{
+  "title": "امسح رمز الطالب",
+  "error": "❌ فشل في مسح رمز الاستجابة السريعة.",
+  "latest_request_error": "❌ تعذر جلب أحدث طلب.",
+  "student_fetch_error": "❌ تعذر جلب بيانات الطالب.",
+  "no_accommodation": "لا يوجد سكن مخصص",
+  "latest_request": "أحدث طلب خروج",
+  "method": "الطريقة",
+  "status": "الحالة",
+  "requested": "وقت الطلب",
+  "approved": "وقت الموافقة",
+  "no_request_found": "لا توجد طلبات خروج سابقة لهذا الطالب.",
+  "activity_log": "سجل النشاط",
+  "checkin": "تسجيل دخول",
+  "checkout": "تسجيل خروج",
+  "checkin_success": "✅ تم تسجيل الدخول",
+  "checkout_success": "✅ تم تسجيل الخروج",
+  "checkin_fail": "❌ فشل تسجيل الدخول",
+  "checkout_fail": "❌ فشل تسجيل الخروج",
+  "close": "إغلاق"
+}

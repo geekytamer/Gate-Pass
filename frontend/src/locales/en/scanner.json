@@ -1,0 +1,21 @@
+{
+  "title": "Scan Student QR",
+  "error": "❌ Failed to scan QR code.",
+  "latest_request_error": "❌ Unable to fetch latest request.",
+  "student_fetch_error": "❌ Unable to fetch student details.",
+  "no_accommodation": "No accommodation assigned",
+  "latest_request": "Latest Exit Request",
+  "method": "Method",
+  "status": "Status",
+  "requested": "Requested",
+  "approved": "Approved",
+  "no_request_found": "No previous exit requests found for this student.",
+  "activity_log": "Activity Log",
+  "checkin": "Check In",
+  "checkout": "Check Out",
+  "checkin_success": "✅ Student checked in",
+  "checkout_success": "✅ Student checked out",
+  "checkin_fail": "❌ Check-in failed",
+  "checkout_fail": "❌ Check-out failed",
+  "close": "Close"
+}
