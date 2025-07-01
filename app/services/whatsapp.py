@@ -220,7 +220,7 @@ async def send_approve_request(phone: str, student_name: str):
         "to": phone,
         "type": "template",
         "template": {
-            "name": "approve_request",
+            "name": "approve_exit",
             "language": {"code": "ar"},
             "components": [
                 {
