@@ -213,3 +213,36 @@ async def send_check_notification(phone: str, student_name: str, check_type: str
             json=payload
         )
         res.raise_for_status()
+        
+async def send_approve_request(phone: str, student_name: str):
+    payload = {
+        "messaging_product": "whatsapp",
+        "to": phone,
+        "type": "template",
+        "template": {
+            "name": "approve_request",
+            "language": {"code": "ar"},
+            "components": [
+                {
+                    "type": "body",
+                    "parameters": [
+                        {"type": "text", "text": student_name},
+                    ]
+                }
+            ]
+        }
+    }
+
+    headers = {
+        "Authorization": f"Bearer {settings.WHATSAPP_TOKEN}",
+        "Content-Type": "application/json"
+    }
+
+    async with httpx.AsyncClient() as client:
+        res = await client.post(
+            f"{settings.WHATSAPP_API_URL}/{settings.WHATSAPP_PHONE_NUMBER_ID}/messages",
+            headers=headers,
+            json=payload
+        )
+        res.raise_for_status()
+        return res.json()

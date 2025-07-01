@@ -56,6 +56,6 @@ def require_main_admin(user: User = Depends(get_current_user)):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
     return user
 
-def generate_random_otp(length: int = 6) -> str:
+def generate_random_otp(length: int = 4) -> str:
     """Generate a numeric OTP of specified length (default 6 digits)."""
     return ''.join(str(random.randint(0, 9)) for _ in range(length))

@@ -11,7 +11,7 @@ from app.models.otp import OTP
 from app.models.processed_webhook import ProcessedWebhook
 from app.services.message_classifier import is_exit_request
 from app.services.qr import generate_qr_image
-from app.services.whatsapp import send_whatsapp_message, send_whatsapp_template_with_qr_link
+from app.services.whatsapp import send_whatsapp_message, send_approve_request
 from app.services.sms_service import send_sms
 from app.core.security import generate_random_otp
 from app.core.config import settings
@@ -239,4 +239,6 @@ async def create_exit_request(db: Session, user: User, phone: str, method: str, 
 
     relative_info = f" مع {relative_name}" if relative_name else ""
     await send_sms(parent.phone_number, f"خروج من {user.name}{relative_info}، رمز الموافقة: {code}")
+    
     send_whatsapp_message(phone, translate("otp_sent", "en"))
+    await send_approve_request(parent.phone_number, user.name)
