@@ -39,6 +39,10 @@ export default function EditStaffPage() {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
+  useEffect(() => {
+    document.title = "Edit Staff - GatePass Admin";
+  }, []);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {

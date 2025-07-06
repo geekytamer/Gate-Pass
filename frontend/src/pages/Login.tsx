@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
 
@@ -9,6 +9,10 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const { login } = useAuth();
+
+  useEffect(() => {
+      document.title = "Login - GatePass";
+    }, []);
 
     const handleLogin = async (e: React.FormEvent) => {
       e.preventDefault(); // ❗ Prevent page refresh

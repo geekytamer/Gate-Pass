@@ -1,6 +1,7 @@
 import { useAuth } from "../context/AuthContext";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { useEffect } from "react";
 
 export default function DashboardPage() {
   const { logout, user } = useAuth();
@@ -10,10 +11,15 @@ export default function DashboardPage() {
   const isUniversityAdmin = user?.role === "university_admin";
   const isStaff = user?.role === "staff";
 
+  useEffect(() => {
+      document.title = "GatePass Dashboard";
+    }, []);
+    
   const toggleLanguage = () => {
     const newLang = i18n.language === "ar" ? "en" : "ar";
     i18n.changeLanguage(newLang);
   };
+
 
   return (
     <div

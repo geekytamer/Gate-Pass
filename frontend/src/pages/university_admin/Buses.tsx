@@ -19,6 +19,10 @@ export default function BusesPage() {
   const [busToDelete, setBusToDelete] = useState<string | null>(null);
 
   useEffect(() => {
+    document.title = "Manage Buses - University Admin";
+  }, []);
+
+  useEffect(() => {
     if (!token) return;
 
     const fetchData = async () => {

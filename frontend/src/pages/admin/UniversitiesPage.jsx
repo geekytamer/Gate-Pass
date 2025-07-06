@@ -13,6 +13,10 @@ export default function UniversitiesPage() {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
+  useEffect(() => {
+    document.title = "Universities - GatePass Admin";
+  }, []);
+
   const fetchUniversities = async () => {
     try {
       const res = await axios.get(`${API}/admin/universities`, { withCredentials: true });

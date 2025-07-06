@@ -25,6 +25,10 @@ export default function RegisterStudentPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
+    document.title = "Register Student - University Admin";
+  }, []);
+
+  useEffect(() => {
     const fetchAccommodations = async () => {
       try {
         const res = await axios.get(`${API}/accommodations`, {

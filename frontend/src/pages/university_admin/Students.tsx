@@ -15,6 +15,10 @@ export default function StudentsPage() {
   const [loading, setLoading] = useState(false);
   const [debounceTimeout, setDebounceTimeout] = useState<NodeJS.Timeout | null>(null);
 
+  useEffect(() => {
+    document.title = "Students - University Admin";
+  }, []);
+
   const handleSearch = (value: string) => {
     setQuery(value);
 

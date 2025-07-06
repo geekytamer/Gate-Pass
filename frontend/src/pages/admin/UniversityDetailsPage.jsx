@@ -14,6 +14,10 @@ export default function UniversityDetailsPage() {
   const [staff, setStaff] = useState([]);
   const [name, setName] = useState("");
 
+  useEffect(() => {
+    document.title = "University Details - GatePass Admin";
+  }, []);
+
   const fetchData = async () => {
     try {
       const [uniRes, staffRes] = await Promise.all([

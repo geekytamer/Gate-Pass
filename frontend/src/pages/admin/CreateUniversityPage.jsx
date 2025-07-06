@@ -3,6 +3,7 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { useTranslation } from "react-i18next";
+import { useEffect } from "react";
 
 const API = process.env.REACT_APP_API_URL || "http://localhost:8000";
 
@@ -11,6 +12,10 @@ export default function CreateUniversityPage() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
+
+  useEffect(() => {
+    document.title = "Create University - GatePass Admin";
+  }, []);
 
   const handleCreate = async () => {
     if (!name.trim()) {

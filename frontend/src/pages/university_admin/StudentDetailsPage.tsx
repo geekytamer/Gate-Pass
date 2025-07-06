@@ -53,6 +53,10 @@ export default function StudentDetailsPage() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  useEffect(() => {
+    document.title = "Student Details - University Admin";
+  }, []);
+
   const handleUpdate = async () => {
     try {
       await axios.put(

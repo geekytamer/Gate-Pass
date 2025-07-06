@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { useTranslation } from "react-i18next";
+import { useEffect } from "react";
 
 const API = process.env.REACT_APP_API_URL;
 
@@ -10,6 +11,10 @@ export default function CreateStaffPage() {
   const { id: universityId } = useParams();
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
+
+  useEffect(() => {
+    document.title = "Create Staff - GatePass Admin";
+  }, []);
 
   const [form, setForm] = useState({
     name: "",

@@ -7,6 +7,10 @@ const AdminDashboard = () => {
   const { t, i18n } = useTranslation();
 
   useEffect(() => {
+    document.title = "Admin Dashboard - GatePass Admin";
+  }, []);
+
+  useEffect(() => {
     const fetchStats = async () => {
       try {
         const res = await axios.get("admin./api/admin/statistics");

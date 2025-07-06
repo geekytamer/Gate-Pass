@@ -32,6 +32,10 @@ export default function QRScanner() {
   const { t, i18n } = useTranslation();
 
   useEffect(() => {
+    document.title = "QR Scanner";
+  }, []);
+
+  useEffect(() => {
     if (!scannerRef.current) {
       const scanner = new Html5QrcodeScanner(
         "qr-reader",
