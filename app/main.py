@@ -16,20 +16,20 @@ init_db()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "*"],  # Or ["*"] for dev only
+    allow_origins=["http://localhost:3000", "https://dashboard.gatepassom.com"],  # Or ["*"] for dev only
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 # Register routers
-app.include_router(whatsapp.router, prefix="/api/whatsapp", tags=["WhatsApp Webhook"])
-app.include_router(security.router, prefix="/api/security", tags=["Security QR Scan"])
-app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
-app.include_router(university.router, prefix="/api/university", tags=["University"])
-app.include_router(students.router, prefix="/api/students", tags=["Students"])
-app.include_router(accommodations.router, prefix="/api/accommodations", tags=["Accommodations"])
-app.include_router(admin.router, prefix="/api/admin") 
+app.include_router(whatsapp.router, prefix="/whatsapp", tags=["WhatsApp Webhook"])
+app.include_router(security.router, prefix="/security", tags=["Security QR Scan"])
+app.include_router(auth.router, prefix="/auth", tags=["Authentication"])
+app.include_router(university.router, prefix="/university", tags=["University"])
+app.include_router(students.router, prefix="/students", tags=["Students"])
+app.include_router(accommodations.router, prefix="/accommodations", tags=["Accommodations"])
+app.include_router(admin.router, prefix="/admin") 
 @app.get("/")
 def root():
     return {"message": "GatePass API is running!"}
