@@ -236,9 +236,15 @@ async def create_exit_request(db: Session, user: User, phone: str, method: str, 
     )
     db.add(otp)
     db.commit()
-
+    
     relative_info = f" مع {relative_name}" if relative_name else ""
-    await send_sms(parent.phone_number, f"خروج من {user.name}{relative_info}، رمز الموافقة: {code}")
+    BOT_PHONE = "96878788804"  # Replace with your WhatsApp Business number (no '+' or leading zeros)
+
+    await send_sms(
+        parent.phone_number,
+        f"طلب خروج من {user.name}{relative_info}، رمز الموافقة: {code}\n\n"
+        f"اضغط هنا لفتح المحادثة في واتساب: https://wa.me/{BOT_PHONE}?text={code}"
+    )
     
     send_whatsapp_message(phone, translate("otp_sent", "en"))
     await send_approve_request(parent.phone_number, user.name)
