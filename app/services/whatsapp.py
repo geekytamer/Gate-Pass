@@ -212,6 +212,7 @@ async def send_check_notification(phone: str, student_name: str, check_type: str
             headers=headers,
             json=payload
         )
+        
         res.raise_for_status()
         
 async def send_approve_request(phone: str, student_name: str):
