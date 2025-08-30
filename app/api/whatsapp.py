@@ -186,7 +186,7 @@ async def process_webhook(msg: dict, db: Session):
                     db.commit()
                     student = db.query(User).get(request.student_id)
                     if student:
-                        print(f"User id={student.id}, name={student.full_name}, phone={student.phone_number}")
+                        print(f"User id={student.id}, name={student.name}, phone={student.phone_number}")
                         send_whatsapp_message(student.phone_number, translate("student_notified", lang))
                     approved_any = True
 
