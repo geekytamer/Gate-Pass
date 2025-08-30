@@ -173,28 +173,28 @@ async def process_webhook(msg: dict, db: Session):
         ).first()
 
         if otp:
-            otp.is_verified = True
-            db.commit()
-
             links = db.query(ParentStudentLink).filter_by(parent_id=user.id).all()
             approved_any = False
+            otp.is_verified = True
             for link in links:
                 request = db.query(ExitRequest).filter_by(student_id=link.student_id, status="pending").order_by(ExitRequest.requested_at.desc()).first()
-                print(f"ExitRequest id={request.id}, student_id={request.student_id}, status={request.status}")
                 if request:
+                    print(f"ExitRequest id={request.id}, student_id={request.student_id}, status={request.status}")
                     request.parent_id = user.id
                     request.status = "approved"
                     request.approved_at = datetime.utcnow()
                     db.commit()
                     student = db.query(User).get(request.student_id)
-                    print(f"User id={student.id}, name={student.full_name}, phone={student.phone_number}")
-                    send_whatsapp_message(student.phone_number, translate("student_notified", lang))
+                    if student:
+                        print(f"User id={student.id}, name={student.full_name}, phone={student.phone_number}")
+                        send_whatsapp_message(student.phone_number, translate("student_notified", lang))
                     approved_any = True
 
             if approved_any:
                 send_whatsapp_message(phone, translate("parent_approved", lang))
             else:
                 send_whatsapp_message(phone, translate("otp_no_requests", lang))
+            db.commit()
         else:
             links = db.query(ParentStudentLink).filter_by(parent_id=user.id).all()
             if not links:
