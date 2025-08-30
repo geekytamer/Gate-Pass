@@ -180,6 +180,7 @@ async def process_webhook(msg: dict, db: Session):
             approved_any = False
             for link in links:
                 request = db.query(ExitRequest).filter_by(student_id=link.student_id, status="pending").order_by(ExitRequest.requested_at.desc()).first()
+                print(request)
                 if request:
                     request.parent_id = user.id
                     request.status = "approved"
