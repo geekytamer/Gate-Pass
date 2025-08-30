@@ -23,7 +23,7 @@ class User(Base):
     phone_number = Column(String, unique=True, nullable=False)
     role = Column(SqlEnum(UserRole, name="role_enum"), nullable=False)
 
-    hashed_password = Column(String, nullable=False)
+    hashed_password = Column(String, nullable=True)  # Nullable for users who don't log in
     accommodation_id = Column(UUID(as_uuid=True), ForeignKey('accommodation.id'), nullable=True)
     university_id = Column(UUID(as_uuid=True), ForeignKey('university.id'), nullable=True)
     is_active = Column(Boolean, default=True)
